@@ -89,11 +89,35 @@ class RestoreEngine:
         self._dry_run = False
         return self.changes_preview, []
 
+    # Fields that are read-only / always differ between backup and live
+    _IGNORE_FIELDS = frozenset({
+        "id", "networkId", "organizationId",
+        "creationTime", "lastUpdated", "updateTime", "createdAt", "updatedAt",
+        "author", "人次",
+    })
+
+    def _normalize(self, data):
+        """Strip dynamic/metadata fields from API response for stable comparison."""
+        if data is None:
+            return None
+        if isinstance(data, dict):
+            result = {}
+            for k, v in data.items():
+                if k in self._IGNORE_FIELDS:
+                    continue
+                result[k] = self._normalize(v)
+            return result
+        if isinstance(data, list):
+            return [self._normalize(item) for item in data]
+        return data
+
     def _diff_values(self, backup_val, live_val):
-        """Return True if values differ (needs restore), False if identical."""
-        b = json.dumps(backup_val, sort_keys=True) if isinstance(backup_val, (dict, list)) else str(backup_val) if backup_val is not None else ""
-        l = json.dumps(live_val, sort_keys=True) if isinstance(live_val, (dict, list)) else str(live_val) if live_val is not None else ""
-        return b != l
+        """Return True if values differ (needs restore), False if identical after normalization."""
+        b = self._normalize(backup_val)
+        l = self._normalize(live_val)
+        b_str = json.dumps(b, sort_keys=True) if isinstance(b, (dict, list)) else str(b) if b is not None else ""
+        l_str = json.dumps(l, sort_keys=True) if isinstance(l, (dict, list)) else str(l) if l is not None else ""
+        return b_str != l_str
 
     def _preview_network(self, net_dir):
         """Generate a preview of what will be restored for a network — compares live vs backup."""
@@ -140,12 +164,12 @@ class RestoreEngine:
                 except Exception:
                     continue
 
-                # Skip error placeholders
-                if isinstance(backup_data, dict) and backup_data.get("error"):
+                # Skip error placeholders — these are API errors during backup, nothing to restore
+                if isinstance(backup_data, dict) and "error" in backup_data:
                     net_changes.append({
                         "type": "appliance_config", "action": "skip",
                         "file": fname, "network": net_name,
-                        "detail": f"Backup contains error placeholder ({backup_data.get('label','?')}) — skipped"
+                        "detail": f"{display_name} — backup returned error ({backup_data.get('error','?')[:60]})"
                     })
                     continue
 
@@ -203,7 +227,12 @@ class RestoreEngine:
                 except Exception:
                     continue
 
-                if isinstance(backup_data, dict) and backup_data.get("error"):
+                if isinstance(backup_data, dict) and "error" in backup_data:
+                    net_changes.append({
+                        "type": "switch_config", "action": "skip",
+                        "file": fname, "network": net_name,
+                        "detail": f"{display_name} — backup returned error ({backup_data.get('error','?')[:60]})"
+                    })
                     continue
 
                 live_data = None
@@ -253,7 +282,12 @@ class RestoreEngine:
                 except Exception:
                     continue
 
-                if isinstance(backup_data, dict) and backup_data.get("error"):
+                if isinstance(backup_data, dict) and "error" in backup_data:
+                    net_changes.append({
+                        "type": "wireless_config", "action": "skip",
+                        "file": fname, "network": net_name,
+                        "detail": f"{display_name} — backup returned error ({backup_data.get('error','?')[:60]})"
+                    })
                     continue
 
                 live_data = None
