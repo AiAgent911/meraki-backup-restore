@@ -1,0 +1,77 @@
+name: Build Release
+
+on:
+  push:
+    branches: [main, master]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install meraki pyinstaller
+
+      - name: Build .exe with PyInstaller
+        run: pyinstaller meraki_backup.spec --clean
+
+      - name: Rename output
+        shell: bash
+        run: mv dist/MerakiBackupRestore.exe RSITServices_MerakiBackupRestore.exe
+
+      - name: Upload to Release (on release)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/RSITServices_MerakiBackupRestore.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MerakiBackupRestore_exe
+          path: dist/RSITServices_MerakiBackupRestore.exe
+          retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install meraki pyinstaller
+
+      - name: Build Linux binary
+        run: |
+          pyinstaller meraki_backup.spec --clean
+          mv dist/MerakiBackupRestore RSITServices_MerakiBackupRestore_Linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MerakiBackupRestore_Linux
+          path: dist/RSITServices_MerakiBackupRestore_Linux
+          retention-days: 30
