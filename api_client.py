@@ -89,16 +89,16 @@ class MerakiAPIClient:
     def get_appliance_vpn(self, network_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id))
 
-    # Client VPN (L2TP/IPsec / Cisco Secure Client) — separate endpoint from site-to-site VPN
-    # GET /networks/{networkId}/appliance/vpn/clientVpn
+    # Client VPN (Cisco Secure Client / AnyConnect) — separate endpoint from site-to-site VPN
+    # GET /networks/{networkId}/appliance/vpn/clientVpn/anyconnectVpn
     def get_appliance_vpn_one_ipsec(self, network_id):
         try:
             metadata = {
                 "tags": ["appliance", "configure", "vpn", "client"],
-                "operation": "getNetworkApplianceClientVpn",
+                "operation": "getNetworkApplianceClientVpnAnyconnectVpn",
             }
             import urllib.parse
-            resource = f"/networks/{urllib.parse.quote(network_id, safe='')}/appliance/vpn/clientVpn"
+            resource = f"/networks/{urllib.parse.quote(network_id, safe='')}/appliance/vpn/clientVpn/anyconnectVpn"
             result = self.dashboard.appliance._session.get(metadata, resource)
             return result, None
         except meraki.APIError as e:
