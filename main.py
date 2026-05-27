@@ -225,7 +225,7 @@ class MerakiBackupApp:
         tk.Label(
             container, text="Dashboard", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 20, "bold")
-        ).grid(row=0, column=0, columnspan=2, sticky=W, pady=(0, 20))
+        ).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 20))
 
         # ── Org Info Card ───────────────────────────────────────
         self._make_card(container, row=1, col=0, title="Organization", colspan=2)
@@ -321,14 +321,14 @@ class MerakiBackupApp:
         tk.Label(
             container, text="Backup", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 20, "bold")
-        ).pack(anchor=W, pady=(0, 15))
+        ).pack(anchor=tk.W, pady=(0, 15))
 
         # ── Options frame ───────────────────────────────────────
         opts = tk.LabelFrame(
             container, text="  Backup Options  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         opts.pack(fill=tk.X, pady=(0, 15))
@@ -336,7 +336,7 @@ class MerakiBackupApp:
         self.backup_dest_var = tk.StringVar(value=self.config.get("backup_destination") or str(Path.home() / "meraki_backups"))
 
         tk.Label(opts, text="Destination:", bg=BG_SECONDARY, fg=TEXT_SECONDARY, font=("Segoe UI", 10)
-        ).grid(row=0, column=0, sticky=W, pady=5)
+        ).grid(row=0, column=0, sticky=tk.W, pady=5)
         tk.Entry(
             opts, textvariable=self.backup_dest_var, bg=BG_TERTIARY, fg=TEXT_PRIMARY,
             font=("Consolas", 10), insertbackground=TEXT_PRIMARY, relief=tk.FLAT, width=50,
@@ -354,14 +354,14 @@ class MerakiBackupApp:
             opts, text="Backup all networks", variable=self.backup_all_networks,
             bg=BG_SECONDARY, fg=TEXT_PRIMARY, font=("Segoe UI", 10),
             selectcolor=BG_SECONDARY, activebackground=BG_SECONDARY, activeforeground=TEXT_PRIMARY
-        ).grid(row=1, column=0, columnspan=3, sticky=W, pady=5)
+        ).grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=5)
 
         # ── Progress frame ──────────────────────────────────────
         progress_frame = tk.LabelFrame(
             container, text="  Progress  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         progress_frame.pack(fill=tk.BOTH, expand=True)
@@ -375,14 +375,14 @@ class MerakiBackupApp:
             progress_frame, text="Idle", bg=BG_SECONDARY, fg=TEXT_SECONDARY,
             font=("Segoe UI", 9)
         )
-        self.backup_progress_label.pack(anchor=W)
+        self.backup_progress_label.pack(anchor=tk.W)
 
         # ── Log area ────────────────────────────────────────────
         log_label = tk.Label(
             container, text="Log Output:", bg=BG_DARK, fg=TEXT_SECONDARY,
             font=("Segoe UI", 10, "bold"), pady=(15, 5)
         )
-        log_label.pack(anchor=W)
+        log_label.pack(anchor=tk.W)
 
         log_frame = tk.Frame(container, bg=BG_SECONDARY, relief=tk.FLAT, bd=1)
         log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
@@ -496,14 +496,14 @@ class MerakiBackupApp:
         tk.Label(
             container, text="Restore", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 20, "bold")
-        ).grid(row=0, column=0, sticky=W, pady=(0, 15))
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 15))
 
         # ── Select Backup ────────────────────────────────────────
         select_frame = tk.LabelFrame(
             container, text="  Select Backup  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         select_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
@@ -531,7 +531,7 @@ class MerakiBackupApp:
             container, text="  Backup Contents  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         preview_frame.grid(row=2, column=0, sticky="nsew", pady=(0, 15))
@@ -801,14 +801,14 @@ class MerakiBackupApp:
         tk.Label(
             container, text="Settings", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 20, "bold")
-        ).grid(row=0, column=0, sticky=W, pady=(0, 20))
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 20))
 
         # ── API Key ──────────────────────────────────────────────
         key_card = tk.LabelFrame(
             container, text="  Meraki API Key  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         key_card.grid(row=1, column=0, sticky="ew", pady=(0, 15))
@@ -829,24 +829,24 @@ class MerakiBackupApp:
             bg=BG_SECONDARY, fg=TEXT_PRIMARY, font=("Segoe UI", 9),
             selectcolor=BG_SECONDARY, activebackground=BG_SECONDARY, activeforeground=TEXT_PRIMARY,
             command=self._toggle_key_visibility
-        ).grid(row=1, column=0, sticky=W, pady=(0, 5))
+        ).grid(row=1, column=0, sticky=tk.W, pady=(0, 5))
 
         tk.Button(
             key_card, text="Save", bg=ACCENT, fg="#fff",
             font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._save_api_key
-        ).grid(row=1, column=1, sticky=E, pady=(0, 5))
+        ).grid(row=1, column=1, sticky=tk.E, pady=(0, 5))
 
         tk.Button(
             key_card, text="Test Connection", bg=SUCCESS, fg="#fff",
             font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._test_connection
-        ).grid(row=2, column=0, columnspan=2, sticky=W, pady=(0, 5))
+        ).grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
 
         self.test_result_label = tk.Label(
             key_card, text="", bg=BG_SECONDARY, fg=TEXT_SECONDARY, font=("Segoe UI", 9)
         )
-        self.test_result_label.grid(row=3, column=0, columnspan=2, sticky=W, pady=(0, 5))
+        self.test_result_label.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
 
         key_card.grid_columnconfigure(1, weight=1)
 
@@ -855,7 +855,7 @@ class MerakiBackupApp:
             container, text="  Backup Destination  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         dest_card.grid(row=2, column=0, sticky="ew", pady=(0, 15))
@@ -875,15 +875,15 @@ class MerakiBackupApp:
             dest_card, text="Save", bg=ACCENT, fg="#fff",
             font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._save_dest
-        ).grid(row=1, column=0, columnspan=2, sticky=W, pady=(0, 5))
+        ).grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
         dest_card.grid_columnconfigure(0, weight=1)
 
-        # ── About ────────────────────────────────────────────────
+        # ── About ───────────────────────────────────────────────
         about_card = tk.LabelFrame(
             container, text="  About  ",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10, "bold"),
-            labelanchor=NW,
+            labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
         about_card.grid(row=3, column=0, sticky="ew")
@@ -892,19 +892,19 @@ class MerakiBackupApp:
         tk.Label(
             about_card, text="RSITServices — Meraki Backup & Restore",
             bg=BG_SECONDARY, fg=TEXT_PRIMARY, font=("Segoe UI", 11, "bold")
-        ).grid(row=0, column=0, sticky=W, pady=(0, 5))
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
         tk.Label(
             about_card, text="Version 1.0.0", bg=BG_SECONDARY, fg=TEXT_SECONDARY, font=("Segoe UI", 9)
-        ).grid(row=1, column=0, sticky=W, pady=(0, 5))
+        ).grid(row=1, column=0, sticky=tk.W, pady=(0, 5))
         tk.Label(
             about_card,
             text="Full organization backup and restore for Cisco Meraki.\nSupports MX, MS, MR, MV, MG, MT, SM and more.",
             bg=BG_SECONDARY, fg=TEXT_SECONDARY, font=("Segoe UI", 9), wraplength=500, justify=tk.LEFT
-        ).grid(row=2, column=0, sticky=W, pady=(0, 5))
+        ).grid(row=2, column=0, sticky=tk.W, pady=(0, 5))
         tk.Label(
             about_card, text="API Docs: developer.cisco.com/meraki/",
             bg=BG_SECONDARY, fg=ACCENT, font=("Segoe UI", 9)
-        ).grid(row=3, column=0, sticky=W, pady=(0, 5))
+        ).grid(row=3, column=0, sticky=tk.W, pady=(0, 5))
 
     def _toggle_key_visibility(self):
         show = "" if self.api_key_show.get() else "*"

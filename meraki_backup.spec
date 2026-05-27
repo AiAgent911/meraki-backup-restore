@@ -13,10 +13,10 @@ a = Analysis(
     datas=[],
     hiddenimports=[
         'meraki', 'tkinter', 'logging', 'json',
-        'threading', 'pathlib',
+        'threading', 'pathlib', 'traceback',
         'requests', 'urllib3', 'cryptography',
         'certifi', 'charset_normalizer', 'idna', 'socket',
-        'ssl', 'http.client',
+        'ssl', 'http.client', 'tkinter.ttk',
     ],
     excludes=[
         'numpy', 'pandas', 'scipy', 'matplotlib',
