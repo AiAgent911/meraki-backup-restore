@@ -269,12 +269,12 @@ class MerakiBackupApp:
 
         tk.Label(
             card, text=title, bg=BG_SECONDARY, fg=TEXT_SECONDARY,
-            font=("Segoe UI", 10), padx=15, pady=(15, 5), anchor=tk.W
+            font=("Segoe UI", 10), padx=15, pady=5, anchor=tk.W
         ).pack(fill=tk.X)
 
         lbl = tk.Label(
             card, text=value, bg=BG_SECONDARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 22, "bold"), padx=15, pady=(0, 15), anchor=tk.W
+            font=("Segoe UI", 22, "bold"), padx=15, pady=15, anchor=tk.W
         )
         lbl.pack(fill=tk.X)
         return card
@@ -321,7 +321,7 @@ class MerakiBackupApp:
         tk.Label(
             container, text="Backup", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 20, "bold")
-        ).pack(anchor=tk.W, pady=(0, 15))
+        ).pack(anchor=tk.W, pady=15)
 
         # ── Options frame ───────────────────────────────────────
         opts = tk.LabelFrame(
@@ -331,7 +331,7 @@ class MerakiBackupApp:
             labelanchor=tk.NW,
             padx=15, pady=10, relief=tk.FLAT, bd=0
         )
-        opts.pack(fill=tk.X, pady=(0, 15))
+        opts.pack(fill=tk.X, pady=15)
 
         self.backup_dest_var = tk.StringVar(value=self.config.get("backup_destination") or str(Path.home() / "meraki_backups"))
 
@@ -370,7 +370,7 @@ class MerakiBackupApp:
             progress_frame, orient=tk.HORIZONTAL, length=100,
             mode="determinate", style="Dark.Horizontal.TProgressbar"
         )
-        self.backup_progress.pack(fill=tk.X, pady=(0, 10))
+        self.backup_progress.pack(fill=tk.X, pady=10)
         self.backup_progress_label = tk.Label(
             progress_frame, text="Idle", bg=BG_SECONDARY, fg=TEXT_SECONDARY,
             font=("Segoe UI", 9)
@@ -380,12 +380,12 @@ class MerakiBackupApp:
         # ── Log area ────────────────────────────────────────────
         log_label = tk.Label(
             container, text="Log Output:", bg=BG_DARK, fg=TEXT_SECONDARY,
-            font=("Segoe UI", 10, "bold"), pady=(15, 5)
+            font=("Segoe UI", 10, "bold"), pady=15
         )
         log_label.pack(anchor=tk.W)
 
         log_frame = tk.Frame(container, bg=BG_SECONDARY, relief=tk.FLAT, bd=1)
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=15)
         log_frame.grid_columnconfigure(0, weight=1)
         log_frame.grid_rowconfigure(0, weight=1)
 
