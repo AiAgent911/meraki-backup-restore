@@ -64,6 +64,7 @@ class RestoreEngine:
         """Preview what changes will be made without applying them"""
         self._dry_run = True
         self.changes_preview = []
+        self.changes_preview_by_net = {}  # net_id -> list of changes
         meta, errs = self.load_backup(backup_path)
         if errs:
             return [], errs
@@ -88,56 +89,206 @@ class RestoreEngine:
         self._dry_run = False
         return self.changes_preview, []
 
+    def _diff_values(self, backup_val, live_val):
+        """Return True if values differ (needs restore), False if identical."""
+        b = json.dumps(backup_val, sort_keys=True) if isinstance(backup_val, (dict, list)) else str(backup_val) if backup_val is not None else ""
+        l = json.dumps(live_val, sort_keys=True) if isinstance(live_val, (dict, list)) else str(live_val) if live_val is not None else ""
+        return b != l
+
     def _preview_network(self, net_dir):
-        """Generate a preview of what will be restored for a network"""
+        """Generate a preview of what will be restored for a network — compares live vs backup."""
         net_meta_file = net_dir / "network_meta.json"
         if not net_meta_file.exists():
             return
 
         net_meta = json.loads(net_meta_file.read_text())
-        self.changes_preview.append({
-            "type": "network",
-            "action": "create/update",
-            "name": net_meta.get("name", "unknown"),
-            "id": net_meta.get("id", ""),
-            "product_types": net_meta.get("productTypes", [])
-        })
+        net_id = net_meta.get("id", "")
+        net_name = net_meta.get("name", "unknown")
+        net_id_key = str(net_id)
 
-        # Preview appliance
+        # Track changes for this network
+        net_changes = []
+
+        # ── Appliance configs ─────────────────────────────────────
         appliance_dir = net_dir / "appliance"
-        if appliance_dir.exists():
-            for item in appliance_dir.iterdir():
-                if item.suffix == ".json":
-                    self.changes_preview.append({
-                        "type": "appliance_config",
-                        "action": "update",
-                        "file": item.name,
-                        "network": net_meta.get("name", "")
+        if appliance_dir.exists() and net_id:
+            # Map file → (getter method name, display name)
+            appliance_getters = [
+                ("firewall_inbound_rules.json",  "get_appliance_firewall_inbound_rules",   "MX Inbound Firewall Rules"),
+                ("firewall_outbound_rules.json", "get_appliance_firewall_outbound_rules",  "MX Outbound Firewall Rules"),
+                ("firewall_l3_rules.json",       "get_appliance_firewall_l3_rules",        "MX L3 Firewall Rules"),
+                ("firewall_traffic_shaping.json","get_appliance_firewall_traffic_shaping",  "MX Traffic Shaping"),
+                ("vpn_site_to_site.json",        "get_appliance_vpn",                      "MX Site-to-Site VPN"),
+                ("vpn_client_ipsec.json",        "get_appliance_vpn_one_ipsec",             "MX Client VPN (IPSec)"),
+                ("security_intrusion.json",      "get_appliance_security_intrusion",        "MX IDS/IPS"),
+                ("security_content_filtering.json","get_appliance_security_content_filtering","MX Content Filtering"),
+                ("security_malware.json",         "get_appliance_security_malware",          "MX Malware Protection"),
+                ("dhcp_subnets.json",            "get_appliance_dhcp",                      "MX DHCP Subnets"),
+                ("dns_settings.json",             "get_appliance_dns",                       "MX DNS Settings"),
+                ("vlans.json",                   "get_appliance_vlans",                     "MX VLANs"),
+                ("warm_spare.json",              "get_appliance_warm_spare",                "MX Warm Spare"),
+                ("radio_settings.json",          "get_appliance_radio_settings",            "MX Radio Settings"),
+            ]
+
+            for fname, getter_name, display_name in appliance_getters:
+                fpath = appliance_dir / fname
+                if not fpath.exists():
+                    continue
+
+                try:
+                    backup_data = json.loads(fpath.read_text())
+                except Exception:
+                    continue
+
+                # Skip error placeholders
+                if isinstance(backup_data, dict) and backup_data.get("error"):
+                    net_changes.append({
+                        "type": "appliance_config", "action": "skip",
+                        "file": fname, "network": net_name,
+                        "detail": f"Backup contains error placeholder ({backup_data.get('label','?')}) — skipped"
+                    })
+                    continue
+
+                # Try to get live value
+                live_data = None
+                try:
+                    getter = getattr(self.client, getter_name, None)
+                    if getter and callable(getter):
+                        live_data = getter(net_id)
+                except Exception:
+                    pass
+
+                if live_data is None:
+                    # No live value — would be created
+                    net_changes.append({
+                        "type": "appliance_config", "action": "create",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+                elif self._diff_values(backup_data, live_data):
+                    net_changes.append({
+                        "type": "appliance_config", "action": "update",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+                else:
+                    # Identical — no change
+                    net_changes.append({
+                        "type": "appliance_config", "action": "no_change",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
                     })
 
-        # Preview switch
+        # ── Switch configs ────────────────────────────────────────
         switch_dir = net_dir / "switch"
-        if switch_dir.exists():
-            for item in switch_dir.iterdir():
-                if item.suffix == ".json":
-                    self.changes_preview.append({
-                        "type": "switch_config",
-                        "action": "update",
-                        "file": item.name,
-                        "network": net_meta.get("name", "")
+        if switch_dir.exists() and net_id:
+            switch_files = [
+                ("settings.json",       "_get_switch_settings",          "Switch Settings"),
+                ("access_control_lists.json", "_get_switch_access_control_lists", "Switch ACLs"),
+                ("poe.json",            "_get_switch_poe",               "Switch PoE"),
+                ("qos_rules.json",      "_get_switch_qos_rules",         "Switch QoS Rules"),
+                ("dscp_tagging.json",   "_get_switch_dscp_tagging",      "Switch DSCP Tagging"),
+                ("port_schedules.json", "_get_switch_port_schedules",    "Switch Port Schedules"),
+                ("storm_control.json",  "_get_switch_storm_control",     "Switch Storm Control"),
+                ("mirror.json",         "_get_switch_mirror",            "Switch Mirror"),
+            ]
+
+            for fname, getter_name, display_name in switch_files:
+                fpath = switch_dir / fname
+                if not fpath.exists():
+                    continue
+
+                try:
+                    backup_data = json.loads(fpath.read_text())
+                except Exception:
+                    continue
+
+                if isinstance(backup_data, dict) and backup_data.get("error"):
+                    continue
+
+                live_data = None
+                try:
+                    getter = getattr(self.client, getter_name, None)
+                    if getter and callable(getter):
+                        live_data = getter(net_id)
+                except Exception:
+                    pass
+
+                if live_data is None:
+                    net_changes.append({
+                        "type": "switch_config", "action": "create",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+                elif self._diff_values(backup_data, live_data):
+                    net_changes.append({
+                        "type": "switch_config", "action": "update",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+                else:
+                    net_changes.append({
+                        "type": "switch_config", "action": "no_change",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
                     })
 
-        # Preview wireless
+        # ── Wireless configs ─────────────────────────────────────
         wireless_dir = net_dir / "wireless"
-        if wireless_dir.exists():
-            for item in wireless_dir.iterdir():
-                if item.suffix == ".json":
-                    self.changes_preview.append({
-                        "type": "wireless_config",
-                        "action": "update",
-                        "file": item.name,
-                        "network": net_meta.get("name", "")
+        if wireless_dir.exists() and net_id:
+            wireless_files = [
+                ("ssids.json",      "_get_wireless_ssids",                          "Wireless SSIDs"),
+                ("rf_profiles.json","_get_wireless_rf_profiles",                     "Wireless RF Profiles"),
+                ("settings.json",   "_get_wireless_settings",                       "Wireless Settings"),
+                ("air_marshal.json","get_wireless_air_marshal",                     "Air Marshal"),
+            ]
+
+            for fname, getter_name, display_name in wireless_files:
+                fpath = wireless_dir / fname
+                if not fpath.exists():
+                    continue
+
+                try:
+                    backup_data = json.loads(fpath.read_text())
+                except Exception:
+                    continue
+
+                if isinstance(backup_data, dict) and backup_data.get("error"):
+                    continue
+
+                live_data = None
+                try:
+                    getter = getattr(self.client, getter_name, None)
+                    if getter and callable(getter):
+                        live_data = getter(net_id)
+                except Exception:
+                    pass
+
+                if live_data is None:
+                    net_changes.append({
+                        "type": "wireless_config", "action": "create",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
                     })
+                elif self._diff_values(backup_data, live_data):
+                    net_changes.append({
+                        "type": "wireless_config", "action": "update",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+                else:
+                    net_changes.append({
+                        "type": "wireless_config", "action": "no_change",
+                        "file": fname, "network": net_name,
+                        "detail": display_name
+                    })
+
+        # Store changes keyed by network
+        self.changes_preview_by_net[net_id_key] = net_changes
+        # Flat list for UI (only include actual changes, not no_change)
+        for c in net_changes:
+            if c["action"] != "no_change":
+                self.changes_preview.append(c)
 
     # ── Execute Restore ─────────────────────────────────────────
 

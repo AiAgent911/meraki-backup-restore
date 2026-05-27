@@ -1050,6 +1050,23 @@ class MerakiBackupApp:
         except Exception as e:
             self.restore_preview.append_error(f"Failed to load backup: {e}")
 
+    def _format_change(self, change):
+        """Format a single change dict for the preview log."""
+        action = change.get("action", "?")
+        ctype = change.get("type", "?")
+        net = change.get("network", "?")
+        detail = change.get("detail", change.get("file", "?"))
+
+        icon = {"update": "🔄", "create": "🆕", "skip": "⏭", "no_change": "✅"}.get(action, "•")
+        label = {"update": "UPDATE", "create": "CREATE", "skip": "SKIP"}.get(action, action.upper())
+
+        if action == "no_change":
+            self.restore_preview.append(f"  {icon} {detail} — ✅ matches backup", SUCCESS)
+        elif action == "skip":
+            self.restore_preview.append(f"  {icon} {detail}", WARNING)
+        else:
+            self.restore_preview.append(f"  {icon} [{label}] {detail} ({net})", ACCENT)
+
     def _preview_restore(self):
         path = self.restore_path_var.get().strip()
         if not path:
@@ -1074,12 +1091,15 @@ class MerakiBackupApp:
                 engine = RestoreEngine(api_key)
                 changes, errs = engine.preview_restore(path, target_type="full")
                 changes = changes or []
+                total = len(changes)
                 self.root.after(0, lambda: [
-                    self.restore_preview.append_info(f"Changes to be made: {len(changes)}"),
-                    *[self.restore_preview.append_info(f"  {c.get('type','?')}: {c.get('name', c.get('file', ''))}") for c in (changes[:30] or [])],
-                    *(self.restore_preview.append_warning("...truncated") if len(changes) > 30 else []),
-                    *(self.restore_preview.append_error(f"Error: {e}") for e in (errs or []))
-                ])
+                    self.restore_preview.append_info(f"Scanned: {total} change(s) detected"),
+                    self.restore_preview.append(""),
+                    self.restore_preview.append_info("─── CHANGE DETAILS ───") if total else self.restore_preview.append_info("No changes detected — live config matches backup."),
+                    *[self._format_change(c) for c in changes],
+                ] + ([self.restore_preview.append_warning(f"... {total - 30} more changes") if total > 30 else None])
+                + ([self.restore_preview.append_error(f"Error: {e}") for e in (errs or []) if e])
+                )
             except Exception as e:
                 self.root.after(0, lambda: self.restore_preview.append_error(f"Preview failed: {e}"))
 
