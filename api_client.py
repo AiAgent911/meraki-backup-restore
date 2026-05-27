@@ -89,29 +89,22 @@ class MerakiAPIClient:
     def get_appliance_vpn(self, network_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id))
 
-    # client VPN (IPsec / Cisco Secure Client) — calls GET /networks/{id}/appliance/vpn/siteToSiteVpn
-    # which contains a clientVpn sub-object when configured
+    # Client VPN (L2TP/IPsec / Cisco Secure Client) — separate endpoint from site-to-site VPN
+    # GET /networks/{networkId}/appliance/vpn/clientVpn
     def get_appliance_vpn_one_ipsec(self, network_id):
-        def _call():
-            try:
-                data = self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id)
-                if data is None:
-                    return None
-                client_vpn = data.get("clientVpn")
-                if not client_vpn:
-                    return None
-                return {
-                    "enabled": client_vpn.get("enabled"),
-                    "ipsecPolicies": client_vpn.get("ipsecPolicies"),
-                    "authentication": client_vpn.get("authentication"),
-                    "authorization": client_vpn.get("authorization"),
-                    "dnsMatch": client_vpn.get("dnsMatch"),
-                    "splitTunnel": client_vpn.get("splitTunnel"),
-                    "clientId": client_vpn.get("clientId"),
-                }
-            except meraki.APIError:
-                return None
-        return self._call_api(_call)
+        try:
+            metadata = {
+                "tags": ["appliance", "configure", "vpn", "client"],
+                "operation": "getNetworkApplianceClientVpn",
+            }
+            import urllib.parse
+            resource = f"/networks/{urllib.parse.quote(network_id, safe='')}/appliance/vpn/clientVpn"
+            result = self.dashboard.appliance._session.get(metadata, resource)
+            return result, None
+        except meraki.APIError as e:
+            if e.status == 404:
+                return None, "not_available"
+            raise
 
     # MX DHCP server — network-level DHCP server settings (distinct from per-VLAN DHCP)
     def get_appliance_dhcp_server(self, network_id):
