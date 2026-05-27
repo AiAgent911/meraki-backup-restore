@@ -1,0 +1,2 @@
+# Requirements for Meraki Backup & Restore
+meraki>=1.35.0
