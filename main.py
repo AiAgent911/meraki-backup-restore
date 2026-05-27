@@ -116,15 +116,18 @@ class MerakiBackupApp:
     # ─── UI Construction ───────────────────────────────────────
 
     def _build_ui(self):
+        # Header at top (place for precise height control)
         self._build_header(self.root)
+
+        # Body: sidebar (left, packed) + content (right, packed beside sidebar)
         body = tk.Frame(self.root, bg=BG_DARK)
-        body.pack(fill=tk.BOTH, expand=True)
-        body.grid_columnconfigure(1, weight=1)
+        body.pack(fill=tk.BOTH, expand=True, side=tk.BOTTOM)
 
         self._build_sidebar(body)
         self.content_frame = tk.Frame(body, bg=BG_DARK)
-        self.content_frame.grid(row=0, column=1, sticky="nsew")
+        self.content_frame.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
+        # Status bar at very bottom
         self.statusbar = tk.Label(
             self.root, text="Ready", bg=BG_SECONDARY, fg=TEXT_SECONDARY,
             font=("Segoe UI", 9), anchor=tk.W, padx=10, pady=4
