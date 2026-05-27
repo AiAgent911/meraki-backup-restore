@@ -6,9 +6,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag (e.g. v1.0.0)'
 
 
 jobs:
@@ -30,23 +27,14 @@ jobs:
       - name: Build .exe with PyInstaller
         run: pyinstaller meraki_backup.spec --clean
 
-      - name: Rename output
-        shell: bash
-        run: mv dist/MerakiBackupRestore.exe RSITServices_MerakiBackupRestore.exe
+      - name: List output
+        run: Get-ChildItem -Recurse dist/
 
-      - name: Upload to Release (on release)
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/RSITServices_MerakiBackupRestore.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-      - name: Upload artifact
+      - name: Upload .exe artifact
         uses: actions/upload-artifact@v4
         with:
           name: MerakiBackupRestore_exe
-          path: dist/RSITServices_MerakiBackupRestore.exe
+          path: dist/MerakiBackupRestore.exe
           retention-days: 30
 
   build-linux:
