@@ -1,0 +1,25 @@
+# Build artifacts
+dist/
+build/
+__pycache__/
+*.egg-info/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+venv/
+.venv/
+.env
+
+# Logs & backups
+logs/
+*.log
+meraki_backups/
+
+# Config (contains API key)
+*.json
+!requirements.txt
