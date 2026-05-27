@@ -89,32 +89,29 @@ class MerakiAPIClient:
     def get_appliance_vpn(self, network_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id))
 
-    # client VPN (IPsec / Cisco Secure Client) — endpoint exists but not wrapped in SDK v3
+    # client VPN (IPsec / Cisco Secure Client) — calls GET /networks/{id}/appliance/vpn/siteToSiteVpn
+    # which contains a clientVpn sub-object when configured
     def get_appliance_vpn_one_ipsec(self, network_id):
-        # GET /networks/{networkId}/appliance/vpn/siteToSiteVpn returns clientVPN settings inside
-        try:
-            result = self._call_api(
-                lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id)
-            )
-            if result[0] is not None:
-                # Extract client VPN sub-object if present
-                data = result[0]
-                client_vpn = {
-                    "enabled": data.get("clientVpn", {}).get("enabled"),
-                    "ipsecPolicies": data.get("clientVpn", {}).get("ipsecPolicies"),
-                    "authentication": data.get("clientVpn", {}).get("authentication"),
-                    "authorization": data.get("clientVpn", {}).get("authorization"),
-                    "dnsMatch": data.get("clientVpn", {}).get("dnsMatch"),
-                    "splitTunnel": data.get("clientVpn", {}).get("splitTunnel"),
-                    "clientId": data.get("clientVpn", {}).get("clientId"),
+        def _call():
+            try:
+                data = self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id)
+                if data is None:
+                    return None
+                client_vpn = data.get("clientVpn")
+                if not client_vpn:
+                    return None
+                return {
+                    "enabled": client_vpn.get("enabled"),
+                    "ipsecPolicies": client_vpn.get("ipsecPolicies"),
+                    "authentication": client_vpn.get("authentication"),
+                    "authorization": client_vpn.get("authorization"),
+                    "dnsMatch": client_vpn.get("dnsMatch"),
+                    "splitTunnel": client_vpn.get("splitTunnel"),
+                    "clientId": client_vpn.get("clientId"),
                 }
-                # Only return if client VPN has meaningful data
-                if client_vpn.get("enabled") is not None:
-                    return client_vpn, None
-                return None, "not_configured"
-            return result
-        except Exception:
-            return None, "not_available"
+            except meraki.APIError:
+                return None
+        return self._call_api(_call)
 
     # MX DHCP server — network-level DHCP server settings (distinct from per-VLAN DHCP)
     def get_appliance_dhcp_server(self, network_id):
@@ -136,13 +133,16 @@ class MerakiAPIClient:
     # ─── Security ─────────────────────────────────────────────────
 
     def get_appliance_security_intrusion(self, network_id):
-        # 400 means network doesn't support intrusion detection
-        try:
-            return self._call_api(
-                lambda: self.dashboard.appliance.getNetworkApplianceSecurityIntrusion(network_id)
-            )
-        except meraki.APIError:
-            return None, "not_supported"
+        # 400 means network doesn't support intrusion detection — handle inside lambda
+        # so _call_api doesn't retry an impossible request
+        def _call():
+            try:
+                return self.dashboard.appliance.getNetworkApplianceSecurityIntrusion(network_id)
+            except meraki.APIError as e:
+                if e.status == 400:
+                    return None  # not supported
+                raise
+        return self._call_api(_call)
 
     def get_appliance_security_content_filtering(self, network_id):
         # v3: getNetworkApplianceContentFiltering
@@ -168,13 +168,15 @@ class MerakiAPIClient:
     # ─── VLANs ────────────────────────────────────────────────────
 
     def get_appliance_vlans(self, network_id):
-        # 400 means VLANs not enabled on this network
-        try:
-            return self._call_api(
-                lambda: self.dashboard.appliance.getNetworkApplianceVlans(network_id)
-            )
-        except meraki.APIError:
-            return None, "not_supported"
+        # 400 means VLANs not enabled on this network — handle inside lambda so no retry
+        def _call():
+            try:
+                return self.dashboard.appliance.getNetworkApplianceVlans(network_id)
+            except meraki.APIError as e:
+                if e.status == 400:
+                    return None  # VLANs not enabled
+                raise
+        return self._call_api(_call)
 
     def get_appliance_vlan(self, network_id, vlan_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVlan(network_id, vlan_id))
