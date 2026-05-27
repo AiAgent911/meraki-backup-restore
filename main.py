@@ -123,7 +123,7 @@ class MerakiBackupApp:
 
         self._build_sidebar(body)
         self.content_frame = tk.Frame(body, bg=BG_DARK)
-        self.content_frame.grid(row=0, column=1, fill=tk.BOTH, expand=True)
+        self.content_frame.grid(row=0, column=1, sticky="nsew")
 
         self.statusbar = tk.Label(
             self.root, text="Ready", bg=BG_SECONDARY, fg=TEXT_SECONDARY,
