@@ -89,9 +89,49 @@ class MerakiAPIClient:
     def get_appliance_vpn(self, network_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id))
 
-    # client VPN (IPsec) — removed in v3
+    # client VPN (IPsec / Cisco Secure Client) — endpoint exists but not wrapped in SDK v3
     def get_appliance_vpn_one_ipsec(self, network_id):
-        return None, "not_available"
+        # GET /networks/{networkId}/appliance/vpn/siteToSiteVpn returns clientVPN settings inside
+        try:
+            result = self._call_api(
+                lambda: self.dashboard.appliance.getNetworkApplianceVpnSiteToSiteVpn(network_id)
+            )
+            if result[0] is not None:
+                # Extract client VPN sub-object if present
+                data = result[0]
+                client_vpn = {
+                    "enabled": data.get("clientVpn", {}).get("enabled"),
+                    "ipsecPolicies": data.get("clientVpn", {}).get("ipsecPolicies"),
+                    "authentication": data.get("clientVpn", {}).get("authentication"),
+                    "authorization": data.get("clientVpn", {}).get("authorization"),
+                    "dnsMatch": data.get("clientVpn", {}).get("dnsMatch"),
+                    "splitTunnel": data.get("clientVpn", {}).get("splitTunnel"),
+                    "clientId": data.get("clientVpn", {}).get("clientId"),
+                }
+                # Only return if client VPN has meaningful data
+                if client_vpn.get("enabled") is not None:
+                    return client_vpn, None
+                return None, "not_configured"
+            return result
+        except Exception:
+            return None, "not_available"
+
+    # MX DHCP server — network-level DHCP server settings (distinct from per-VLAN DHCP)
+    def get_appliance_dhcp_server(self, network_id):
+        # GET /networks/{networkId}/appliance/dhcpServer
+        try:
+            metadata = {
+                "tags": ["appliance", "configure", "dhcp"],
+                "operation": "getNetworkApplianceDhcpServer",
+            }
+            import urllib.parse
+            resource = f"/networks/{urllib.parse.quote(network_id, safe='')}/appliance/dhcpServer"
+            result = self.dashboard.appliance._session.get(metadata, resource)
+            return result, None
+        except meraki.APIError as e:
+            if e.status == 404:
+                return None, "not_available"
+            raise
 
     # ─── Security ─────────────────────────────────────────────────
 
@@ -117,9 +157,9 @@ class MerakiAPIClient:
 
     # ─── DHCP / DNS ───────────────────────────────────────────────
 
-    # DHCP subnets — v3 only has device-level getDeviceApplianceDhcpSubnets, skip
+    # MX DHCP server — GET /networks/{networkId}/appliance/dhcpServer
     def get_appliance_dhcp(self, network_id):
-        return None, "not_available"
+        return self.get_appliance_dhcp_server(network_id)
 
     # DNS settings — removed in v3
     def get_appliance_dns(self, network_id):
