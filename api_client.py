@@ -18,8 +18,7 @@ class MerakiAPIClient:
             print_console=False,
             log_path='./logs',
             suppress_logging=True,
-            maximum_retries=3,
-            retry_429=True
+            maximum_retries=3
         )
         self.log = log_manager
 
