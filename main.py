@@ -180,7 +180,7 @@ class MerakiBackupApp:
             btn = tk.Button(
                 sidebar, text=f"  {icon}  {label}", bg=SIDEBAR_BG, fg=TEXT_PRIMARY,
                 font=("Segoe UI", 11), anchor=tk.W, relief=tk.FLAT,
-                padx=15, pady=10, cursor="hand", command=cmd
+                padx=15, pady=10, cursor="hand1", command=cmd
             )
             btn.pack(fill=tk.X, padx=0, pady=0)
             btn.bind("<Enter>", lambda e, b=btn: b.config(bg=BG_TERTIARY))
@@ -344,7 +344,7 @@ class MerakiBackupApp:
         ).grid(row=0, column=1, sticky="ew", padx=(5, 0), pady=5)
         tk.Button(
             opts, text="Browse", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand1",
             command=self._browse_backup_dest
         ).grid(row=0, column=2, padx=(5, 0), pady=5)
         opts.grid_columnconfigure(1, weight=1)
@@ -399,14 +399,14 @@ class MerakiBackupApp:
         self.backup_start_btn = tk.Button(
             btn_frame, text="▶  Start Backup", bg=SUCCESS, fg="#fff",
             font=("Segoe UI", 11, "bold"), relief=tk.FLAT, padx=25, pady=10,
-            cursor="hand", command=self._start_backup
+            cursor="hand1", command=self._start_backup
         )
         self.backup_start_btn.pack(side=tk.LEFT)
 
         tk.Button(
             btn_frame, text="Clear Log", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 10), relief=tk.FLAT, padx=15, pady=10,
-            cursor="hand", command=self.backup_log.clear
+            cursor="hand1", command=self.backup_log.clear
         ).pack(side=tk.LEFT, padx=(10, 0))
 
     def _browse_backup_dest(self):
@@ -516,12 +516,12 @@ class MerakiBackupApp:
         ).grid(row=0, column=0, sticky="ew", padx=(0, 10), pady=5)
         tk.Button(
             select_frame, text="Browse", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand1",
             command=self._browse_restore_path
         ).grid(row=0, column=1, pady=5)
         tk.Button(
             select_frame, text="Load", bg=ACCENT, fg="#fff",
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._load_restore_backup
         ).grid(row=0, column=2, padx=(5, 0), pady=5)
         select_frame.grid_columnconfigure(0, weight=1)
@@ -565,14 +565,14 @@ class MerakiBackupApp:
         self.restore_preview_btn = tk.Button(
             btn_frame, text="👁  Preview Changes", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
             font=("Segoe UI", 11), relief=tk.FLAT, padx=20, pady=10,
-            cursor="hand", command=self._preview_restore
+            cursor="hand1", command=self._preview_restore
         )
         self.restore_preview_btn.pack(side=tk.LEFT)
 
         self.restore_start_btn = tk.Button(
             btn_frame, text="♻  Restore", bg=HIGHLIGHT, fg="#fff",
             font=("Segoe UI", 11, "bold"), relief=tk.FLAT, padx=25, pady=10,
-            cursor="hand", command=self._start_restore
+            cursor="hand1", command=self._start_restore
         )
         self.restore_start_btn.pack(side=tk.LEFT, padx=(10, 0))
 
@@ -696,12 +696,12 @@ class MerakiBackupApp:
         ).pack(side=tk.LEFT)
         tk.Button(
             hdr, text="Clear", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._clear_logs
         ).pack(side=tk.RIGHT, padx=(5, 0))
         tk.Button(
             hdr, text="Export", bg=ACCENT, fg="#fff",
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._export_logs
         ).pack(side=tk.RIGHT)
         hdr.grid_columnconfigure(0, weight=1)
@@ -727,7 +727,7 @@ class MerakiBackupApp:
         ).pack(side=tk.LEFT)
         tk.Label(
             paths_frame, text=log_manager.get_log_path(),
-            bg=BG_DARK, fg=ACCENT, font=("Consolas", 8), cursor="hand"
+            bg=BG_DARK, fg=ACCENT, font=("Consolas", 8), cursor="hand1"
         ).pack(side=tk.LEFT, padx=(5, 0))
         tk.Label(
             paths_frame, text="  |  Debug:",
@@ -735,7 +735,7 @@ class MerakiBackupApp:
         ).pack(side=tk.LEFT, padx=(10, 0))
         tk.Label(
             paths_frame, text=log_manager.get_debug_log_path(),
-            bg=BG_DARK, fg=ACCENT, font=("Consolas", 8), cursor="hand"
+            bg=BG_DARK, fg=ACCENT, font=("Consolas", 8), cursor="hand1"
         ).pack(side=tk.LEFT, padx=(5, 0))
 
     def _load_logs(self):
@@ -833,13 +833,13 @@ class MerakiBackupApp:
 
         tk.Button(
             key_card, text="Save", bg=ACCENT, fg="#fff",
-            font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._save_api_key
         ).grid(row=1, column=1, sticky=E, pady=(0, 5))
 
         tk.Button(
             key_card, text="Test Connection", bg=SUCCESS, fg="#fff",
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._test_connection
         ).grid(row=2, column=0, columnspan=2, sticky=W, pady=(0, 5))
 
@@ -868,12 +868,12 @@ class MerakiBackupApp:
         ).grid(row=0, column=0, sticky="ew", pady=5)
         tk.Button(
             dest_card, text="Browse", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand",
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=10, cursor="hand1",
             command=self._browse_dest
         ).grid(row=0, column=1, padx=(5, 0), pady=5)
         tk.Button(
             dest_card, text="Save", bg=ACCENT, fg="#fff",
-            font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand",
+            font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=15, cursor="hand1",
             command=self._save_dest
         ).grid(row=1, column=0, columnspan=2, sticky=W, pady=(0, 5))
         dest_card.grid_columnconfigure(0, weight=1)
