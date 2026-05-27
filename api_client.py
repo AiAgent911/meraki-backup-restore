@@ -96,9 +96,13 @@ class MerakiAPIClient:
     # ─── Security ─────────────────────────────────────────────────
 
     def get_appliance_security_intrusion(self, network_id):
-        return self._call_api(
-            lambda: self.dashboard.appliance.getNetworkApplianceSecurityIntrusion(network_id)
-        )
+        # 400 means network doesn't support intrusion detection
+        try:
+            return self._call_api(
+                lambda: self.dashboard.appliance.getNetworkApplianceSecurityIntrusion(network_id)
+            )
+        except meraki.APIError:
+            return None, "not_supported"
 
     def get_appliance_security_content_filtering(self, network_id):
         # v3: getNetworkApplianceContentFiltering
@@ -124,7 +128,13 @@ class MerakiAPIClient:
     # ─── VLANs ────────────────────────────────────────────────────
 
     def get_appliance_vlans(self, network_id):
-        return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVlans(network_id))
+        # 400 means VLANs not enabled on this network
+        try:
+            return self._call_api(
+                lambda: self.dashboard.appliance.getNetworkApplianceVlans(network_id)
+            )
+        except meraki.APIError:
+            return None, "not_supported"
 
     def get_appliance_vlan(self, network_id, vlan_id):
         return self._call_api(lambda: self.dashboard.appliance.getNetworkApplianceVlan(network_id, vlan_id))
@@ -195,8 +205,9 @@ class MerakiAPIClient:
         return None, "not_available"
 
     def get_wireless_failed_connections(self, network_id):
+        # timespan is required — default to 7 days in seconds
         return self._call_api(
-            lambda: self.dashboard.wireless.getNetworkWirelessFailedConnections(network_id)
+            lambda: self.dashboard.wireless.getNetworkWirelessFailedConnections(network_id, timespan=7 * 86400)
         )
 
     def get_wireless_rf_profiles(self, network_id):
