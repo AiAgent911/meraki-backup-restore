@@ -931,7 +931,7 @@ class MerakiBackupApp:
         engine.set_progress_callback(progress_callback)
 
         try:
-            result_path, errors = engine.backup_organization()
+            result_path, errors = engine.backup_organization(org_id)
 
             if result_path:
                 # Record last backup time

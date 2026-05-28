@@ -35,7 +35,7 @@ class BackupEngine:
         if self._progress_callback:
             self._progress_callback(step, total, message)
 
-    def backup_organization(self):
+    def backup_organization(self, org_id=None):
         """Perform full organization backup"""
         self._backup_start_time = datetime.now()
         timestamp = self._backup_start_time.strftime("%Y-%m-%d_%H-%M%S")
@@ -56,7 +56,15 @@ class BackupEngine:
         if not orgs:
             return None, ["No organizations found"]
 
-        org = orgs[0]
+        # Find the org matching the passed org_id
+        org = None
+        for o in orgs:
+            if str(o['id']) == str(org_id):
+                org = o
+                break
+        if not org:
+            self.log.error(f"Organization ID {org_id} not found in API response")
+            return None, [f"Organization ID {org_id} not found"]
         org_id = org['id']
         org_name = org.get('name', 'unknown')
         self.log.info(f"Connected to organization: {org_name} (ID: {org_id})")
