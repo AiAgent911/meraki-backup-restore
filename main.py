@@ -252,7 +252,8 @@ class MerakiBackupApp:
 
     def _on_org_changed(self, event=None):
         selection = self.org_selector.current()
-        org_ids = list(self._org_vars.keys())
+        orgs = self.config.get("organizations", {})
+        org_ids = list(orgs.keys())
         if 0 <= selection < len(org_ids):
             org_id = org_ids[selection]
             self.config.set_active_org(org_id)
