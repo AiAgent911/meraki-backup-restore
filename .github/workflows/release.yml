@@ -37,6 +37,14 @@ jobs:
           path: dist/MerakiBackupRestore.exe
           retention-days: 30
 
+      - name: Attach .oe to release
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = (Get-ChildItem dist/*.exe)[0].Name
+          gh release upload ${{ github.event.release.tag_name }} "dist/$exe"
+
   build-linux:
     runs-on: ubuntu-24.04
 
