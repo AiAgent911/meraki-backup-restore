@@ -108,13 +108,24 @@ class RestoreEngine:
                 result[k] = self._normalize(v)
             return result
         if isinstance(data, list):
-            return [self._normalize(item) for item in data]
+            # Normalize each item, then sort for stable comparison
+            normalized = [self._normalize(item) for item in data]
+            try:
+                return sorted(normalized, key=lambda x: json.dumps(x, sort_keys=True))
+            except TypeError:
+                # Mixed types that can't be sorted together — compare as-is
+                return normalized
         return data
 
     def _diff_values(self, backup_val, live_val):
         """Return True if values differ (needs restore), False if identical after normalization."""
         b = self._normalize(backup_val)
         l = self._normalize(live_val)
+        # Treat [] and None as equivalent (empty list vs null)
+        if isinstance(b, list) and len(b) == 0 and l is None:
+            return False
+        if isinstance(l, list) and len(l) == 0 and b is None:
+            return False
         b_str = json.dumps(b, sort_keys=True) if isinstance(b, (dict, list)) else str(b) if b is not None else ""
         l_str = json.dumps(l, sort_keys=True) if isinstance(l, (dict, list)) else str(l) if l is not None else ""
         return b_str != l_str

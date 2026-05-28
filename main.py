@@ -291,7 +291,7 @@ class MerakiBackupApp:
         dialog = tk.Toplevel(self.root)
         dialog.title("Add Organization")
         dialog.configure(bg=BG_DARK)
-        dialog.geometry("520x380")
+        dialog.geometry("520x460")
         dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.grab_set()
@@ -299,7 +299,7 @@ class MerakiBackupApp:
         # Center
         dialog.update_idletasks()
         x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 260
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 190
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 230
         dialog.geometry(f"+{x}+{y}")
 
         container = tk.Frame(dialog, bg=BG_DARK, padx=25, pady=20)
@@ -307,17 +307,21 @@ class MerakiBackupApp:
         container.grid_columnconfigure(1, weight=1)
 
         tk.Label(
-            container, text="Add New Organization", bg=BG_DARK, fg=TEXT_PRIMARY,
+            container, text="Add Organization(s)", bg=BG_DARK, fg=TEXT_PRIMARY,
             font=("Segoe UI", 16, "bold")
-        ).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 20))
+        ).grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=(0, 5))
+
+        tk.Label(
+            container, text="Enter an API key to fetch and select organizations.", bg=BG_DARK, fg=TEXT_SECONDARY,
+            font=("Segoe UI", 9)
+        ).grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 15))
 
         fields = [
-            ("Organization Name:", "name_var", ""),
-            ("API Key:",         "api_key_var", ""),
+            ("API Key:", "api_key_var", ""),
             ("Backup Destination:", "dest_var", ""),
         ]
 
-        row = 1
+        row = 2
         self._add_org_entries = {}
         for label_text, var_name, default in fields:
             tk.Label(
@@ -333,60 +337,86 @@ class MerakiBackupApp:
             self._add_org_entries[var_name] = var
             row += 1
 
-        # Test + Save buttons
+        # Organization listbox frame
+        tk.Label(
+            container, text="Organizations:", bg=BG_DARK, fg=TEXT_SECONDARY,
+            font=("Segoe UI", 10)
+        ).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=(10, 4))
+        row += 1
+
+        list_frame = tk.Frame(listbox_frame := container, bg=BG_DARK)
+        list_frame.grid(row=row, column=0, columnspan=2, sticky="nsew", pady=(0, 8))
+        list_frame.grid_columnconfigure(0, weight=1)
+        listbox_frame.grid_rowconfigure(row, weight=1)
+
+        org_listbox = tk.Listbox(
+            list_frame, bg=BG_TERTIARY, fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10), selectmode=tk.EXTENDED,
+            relief=tk.FLAT, highlightthickness=0, activestyle="none"
+        )
+        org_listbox.grid(row=0, column=0, sticky="nsew")
+        list_frame.grid_rowconfigure(0, weight=1)
+
+        scrollbar = tk.Scrollbar(list_frame, orient=tk.VERTICAL, command=org_listbox.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        org_listbox.config(yscrollcommand=scrollbar.set)
+        row += 1
+
+        # Buttons
         btn_row = tk.Frame(container, bg=BG_DARK)
-        btn_row.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=(15, 0))
+        btn_row.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
         btn_row.grid_columnconfigure(0, weight=1)
 
-        def test():
+        self._org_list_state = {"orgs": [], "listbox": org_listbox, "fetched": False}
+
+        def fetch_orgs():
             key = self._add_org_entries["api_key_var"].get().strip()
             if not key:
-                messagebox.showwarning("Missing", "Enter an API key to test.", parent=dialog)
+                messagebox.showwarning("Missing", "Enter an API key to fetch organizations.", parent=dialog)
                 return
             try:
                 import meraki
                 dash = meraki.DashboardAPI(key, print_console=False, suppress_logging=True)
                 orgs = dash.organizations.getOrganizations()
-                if orgs:
-                    names = ", ".join(o.get("name","?") for o in orgs[:5])
-                    messagebox.showinfo("Connected", f"✓ API key valid.\nFound organizations:\n{names}", parent=dialog)
-                else:
+                if not orgs:
                     messagebox.showwarning("No Orgs", "API key valid but no organizations found.", parent=dialog)
+                    return
+                self._org_list_state["orgs"] = orgs
+                org_listbox.delete(0, tk.END)
+                for org in orgs:
+                    name = org.get("name", "?")
+                    org_listbox.insert(tk.END, f"  {name}  ({org.get('id')})")
+                org_listbox.select_set(0)  # select first by default
+                self._org_list_state["fetched"] = True
+                messagebox.showinfo("Found", f"✓ Fetched {len(orgs)} organization(s). Select which to add.", parent=dialog)
             except Exception as e:
                 messagebox.showerror("Error", f"Connection failed:\n{e}", parent=dialog)
 
         def save():
-            name = self._add_org_entries["name_var"].get().strip()
+            if not self._org_list_state["fetched"]:
+                messagebox.showwarning("Not Fetched", "Click 'Fetch Orgs' first to load organizations.", parent=dialog)
+                return
+            selection = org_listbox.curselection()
+            if not selection:
+                messagebox.showwarning("None Selected", "Select at least one organization from the list.", parent=dialog)
+                return
             api_key = self._add_org_entries["api_key_var"].get().strip()
             dest = self._add_org_entries["dest_var"].get().strip()
-            if not name or not api_key:
-                messagebox.showwarning("Missing", "Name and API key are required.", parent=dialog)
-                return
-            # Use API key to get real org info
-            try:
-                import meraki
-                dash = meraki.DashboardAPI(api_key, print_console=False, suppress_logging=True)
-                orgs = dash.organizations.getOrganizations()
-                if not orgs:
-                    messagebox.showwarning("No Orgs", "No organizations found for this API key.", parent=dialog)
-                    return
-                # Add first org (user can rename later)
-                org = orgs[0]
+            added = []
+            for idx in selection:
+                org = self._org_list_state["orgs"][idx]
                 org_id = str(org["id"])
+                name = org.get("name", "?")
                 self.config.add_organization(org_id, name, api_key, dest)
-                # Update org name from API if not manually set
-                if name == org.get("name", name):
-                    pass  # used provided name
-                messagebox.showinfo("Added", f"Organization '{name}' added successfully.", parent=dialog)
-                dialog.destroy()
-                self._populate_org_selector()
-                self._refresh_dashboard()
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to verify API key:\n{e}", parent=dialog)
+                added.append(name)
+            messagebox.showinfo("Added", f"✓ Added {len(added)} organization(s):\n" + "\n".join(f"  • {n}" for n in added), parent=dialog)
+            dialog.destroy()
+            self._populate_org_selector()
+            self._refresh_dashboard()
 
         tk.Button(
-            btn_row, text="Test Connection", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
-            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, pady=8, cursor="hand1", command=test
+            btn_row, text="Fetch Orgs", bg=BG_TERTIARY, fg=TEXT_PRIMARY,
+            font=("Segoe UI", 9), relief=tk.FLAT, padx=15, pady=8, cursor="hand1", command=fetch_orgs
         ).pack(side=tk.LEFT)
         tk.Button(
             btn_row, text="Cancel", bg=BG_TERTIARY, fg=TEXT_SECONDARY,
