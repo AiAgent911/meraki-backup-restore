@@ -330,9 +330,10 @@ class RestoreEngine:
 
         # Store changes keyed by network
         self.changes_preview_by_net[net_id_key] = net_changes
-        # Flat list for UI (only include actual changes, not no_change)
+        # Flat list for UI — filter to only meaningful changes
+        # (drop no_change and skip, since there's nothing to do for those)
         for c in net_changes:
-            if c["action"] != "no_change":
+            if c["action"] in ("update", "create"):
                 self.changes_preview.append(c)
 
     # ── Execute Restore ─────────────────────────────────────────

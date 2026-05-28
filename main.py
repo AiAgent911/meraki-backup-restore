@@ -1123,7 +1123,7 @@ class MerakiBackupApp:
                 changes, errs = engine.preview_restore(path, target_type="full")
                 changes = changes or []
                 # Only count actionable changes (skip no_change / ✅ matches entries)
-                actionable = [c for c in changes if c.get("action") != "no_change"]
+                actionable = [c for c in changes if c.get("action") in ("update", "create")]
                 total = len(actionable)
                 self.root.after(0, lambda: [
                     self.restore_preview.append_info(f"Scanned: {total} change(s) detected"),
