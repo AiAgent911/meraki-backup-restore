@@ -37,7 +37,7 @@ jobs:
           path: dist/MerakiBackupRestore.exe
           retention-days: 30
 
-      - name: Attach .oe to release
+      - name: Attach .exe to release
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
