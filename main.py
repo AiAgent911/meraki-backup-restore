@@ -1122,12 +1122,14 @@ class MerakiBackupApp:
                 engine = RestoreEngine(api_key)
                 changes, errs = engine.preview_restore(path, target_type="full")
                 changes = changes or []
-                total = len(changes)
+                # Only count actionable changes (skip no_change / ✅ matches entries)
+                actionable = [c for c in changes if c.get("action") != "no_change"]
+                total = len(actionable)
                 self.root.after(0, lambda: [
                     self.restore_preview.append_info(f"Scanned: {total} change(s) detected"),
                     self.restore_preview.append(""),
-                    self.restore_preview.append_info("─── CHANGE DETAILS ───") if total else self.restore_preview.append_info("No changes detected — live config matches backup."),
-                    *[self._format_change(c) for c in changes],
+                    self.restore_preview.append_info("─── CHANGE DETAILS ───") if total else self.restore_preview.append_info("No changes required — live config matches backup exactly."),
+                    *[self._format_change(c) for c in actionable],
                 ] + ([self.restore_preview.append_warning(f"... {total - 30} more changes") if total > 30 else None])
                 + ([self.restore_preview.append_error(f"Error: {e}") for e in (errs or []) if e])
                 )
